@@ -39,6 +39,11 @@ class Command(BaseCommand):
             help="Use gevent for worker concurrency.",
         )
         parser.add_argument(
+            "--use-spawn",
+            action="store_true",
+            help="Use spawn instead of fork.",
+        )
+        parser.add_argument(
             "--processes", "-p",
             default=CPU_COUNT,
             type=int,
@@ -83,13 +88,15 @@ class Command(BaseCommand):
             help="timeout for worker shutdown, in milliseconds (default: 10 minutes)"
         )
 
-    def handle(self, use_watcher, use_polling_watcher, use_gevent, path, processes, threads, verbosity, queues,
+    def handle(self, use_watcher, use_polling_watcher, use_gevent, use_spawn,path, processes, threads, verbosity, queues,
                pid_file, log_file, forks, worker_shutdown_timeout, **options):
         executable_name = "dramatiq-gevent" if use_gevent else "dramatiq"
         executable_path = self._resolve_executable(executable_name)
         watch_args = ["--watch", "."] if use_watcher else []
         if watch_args and use_polling_watcher:
             watch_args.append("--watch-use-polling")
+
+        spawn_args = ['--use-spawn'] if use_spawn else []
 
         forks_args = []
         if forks:
@@ -105,6 +112,9 @@ class Command(BaseCommand):
             "--threads", str(threads),
             "--worker-shutdown-timeout", str(worker_shutdown_timeout),
 
+            # --use-spawn
+            *spawn_args,
+            
             # --watch /path/to/project [--watch-use-polling]
             *watch_args,
 
